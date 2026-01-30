@@ -3,7 +3,7 @@ import { getAllItems, addItem } from "@/lib/db";
 import { fetchMetadata } from "@/lib/metadata";
 
 export async function GET() {
-  const items = getAllItems();
+  const items = await getAllItems();
   return NextResponse.json(items);
 }
 
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
   }
 
   const metadata = await fetchMetadata(url);
-  const item = addItem({
+  const item = await addItem({
     url,
     title: metadata.title,
     description: metadata.description,

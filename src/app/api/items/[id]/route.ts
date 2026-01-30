@@ -6,7 +6,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const item = toggleRead(Number(id));
+  const item = await toggleRead(Number(id));
   if (!item) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -18,6 +18,6 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  deleteItem(Number(id));
+  await deleteItem(Number(id));
   return NextResponse.json({ ok: true });
 }
