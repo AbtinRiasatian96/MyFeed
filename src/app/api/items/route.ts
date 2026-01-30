@@ -21,13 +21,17 @@ export async function POST(request: NextRequest) {
   }
 
   const metadata = await fetchMetadata(url);
-  const item = addItem(
+  const item = addItem({
     url,
-    metadata.title,
-    metadata.description,
-    metadata.image,
-    metadata.source
-  );
+    title: metadata.title,
+    description: metadata.description,
+    image: metadata.image,
+    source: metadata.source,
+    item_type: metadata.item_type,
+    author: metadata.author,
+    author_image: metadata.author_image,
+    content: metadata.content,
+  });
 
   return NextResponse.json(item, { status: 201 });
 }

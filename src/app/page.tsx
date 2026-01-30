@@ -13,6 +13,10 @@ interface ReadingItem {
   source: string | null;
   is_read: number;
   created_at: string;
+  item_type: string;
+  author: string | null;
+  author_image: string | null;
+  content: string | null;
 }
 
 type Filter = "all" | "unread" | "read";
