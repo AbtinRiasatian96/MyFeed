@@ -230,8 +230,24 @@ export async function fetchMetadata(url: string): Promise<PageMetadata> {
   };
 
   if (itemType === "twitter") {
-    // Embeds handle rendering — just save the type and source
     result.source = "x.com";
+    // Fetch embed HTML from Twitter's oEmbed API
+    try {
+      // Normalize x.com URLs to twitter.com for the oEmbed API
+      const twitterUrl = url.replace("x.com", "twitter.com");
+      const oembedUrl = `https://publish.twitter.com/oembed?url=${encodeURIComponent(twitterUrl)}&omit_script=true&dnt=true&theme=dark`;
+      const res = await fetch(oembedUrl, {
+        signal: AbortSignal.timeout(10000),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        result.content = data.html || null;
+        result.author = data.author_name || null;
+        result.title = data.author_name ? `${data.author_name} on X` : null;
+      }
+    } catch {
+      // oEmbed failed, content will be null
+    }
   } else if (itemType === "linkedin") {
     // Embeds handle rendering — just save the type and source
     result.source = "linkedin.com";

@@ -40,27 +40,16 @@ function extractLinkedInUrn(url: string): string | null {
   return null;
 }
 
-function TwitterEmbed({ url }: { url: string }) {
+function TwitterEmbed({ item }: { item: ReadingItem }) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const tweetId = extractTweetId(url);
-    if (!tweetId || !containerRef.current) return;
+    if (!containerRef.current || !item.content) return;
 
-    // Clear previous content
-    containerRef.current.innerHTML = "";
+    // Insert the oEmbed HTML
+    containerRef.current.innerHTML = item.content;
 
-    // Create the blockquote that Twitter's widget.js will hydrate
-    const blockquote = document.createElement("blockquote");
-    blockquote.className = "twitter-tweet";
-    blockquote.setAttribute("data-theme", "dark");
-    blockquote.setAttribute("data-conversation", "none");
-    const link = document.createElement("a");
-    link.href = url;
-    blockquote.appendChild(link);
-    containerRef.current.appendChild(blockquote);
-
-    // Load or re-run Twitter's widget script
+    // Load or re-run Twitter's widget script to style the blockquote
     const win = window as typeof window & {
       twttr?: { widgets?: { load?: (el?: HTMLElement) => void } };
     };
@@ -77,12 +66,26 @@ function TwitterEmbed({ url }: { url: string }) {
         document.body.appendChild(script);
       }
     }
-  }, [url]);
+  }, [item.content]);
+
+  if (!item.content) {
+    return (
+      <div className="p-4">
+        <p className="text-gray-400 text-sm">Could not load post.</p>
+        <a
+          href={item.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-400 text-sm hover:text-blue-300"
+        >
+          View on X →
+        </a>
+      </div>
+    );
+  }
 
   return (
-    <div ref={containerRef} className="p-4 min-h-[100px]">
-      <p className="text-gray-500 text-sm">Loading post...</p>
-    </div>
+    <div ref={containerRef} className="p-4 min-h-[100px]" />
   );
 }
 
@@ -193,7 +196,7 @@ export function FeedItem({ item, onToggleRead, onDelete }: Props) {
       }`}
     >
       {isTwitter ? (
-        <TwitterEmbed url={item.url} />
+        <TwitterEmbed item={item} />
       ) : isLinkedIn ? (
         <LinkedInEmbed url={item.url} />
       ) : (
