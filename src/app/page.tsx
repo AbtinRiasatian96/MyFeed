@@ -44,8 +44,8 @@ export default function Home() {
       body: JSON.stringify({ url }),
     });
     if (res.ok) {
-      await res.json();
-      await fetchItems();
+      const newItem = await res.json();
+      setItems((prev) => [newItem, ...prev]);
     }
   };
 
