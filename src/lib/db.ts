@@ -1,14 +1,15 @@
-import initSqlJs from "sql.js";
-import type { Database as SqlJsDatabase } from "sql.js";
+/* eslint-disable @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any */
+// Use the pure JS (asm.js) build of sql.js — no WASM file needed
+const initSqlJs = require("sql.js/dist/sql-asm.js");
 import fs from "fs";
 import path from "path";
 
 const DB_PATH = path.join(process.cwd(), "myfeed.db");
 
-let db: SqlJsDatabase | null = null;
-let dbReady: Promise<SqlJsDatabase> | null = null;
+let db: any = null;
+let dbReady: Promise<any> | null = null;
 
-function getDbPromise(): Promise<SqlJsDatabase> {
+function getDbPromise(): Promise<any> {
   if (!dbReady) {
     dbReady = (async () => {
       const SQL = await initSqlJs();
@@ -84,7 +85,7 @@ function rowToItem(row: Record<string, unknown>): ReadingItem {
   };
 }
 
-function queryAll(database: SqlJsDatabase, sql: string, params?: unknown[]): ReadingItem[] {
+function queryAll(database: any, sql: string, params?: unknown[]): ReadingItem[] {
   const stmt = database.prepare(sql);
   if (params) stmt.bind(params);
   const results: ReadingItem[] = [];
