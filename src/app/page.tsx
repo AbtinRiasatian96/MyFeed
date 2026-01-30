@@ -27,7 +27,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
 
   const fetchItems = useCallback(async () => {
-    const res = await fetch("/api/items");
+    const res = await fetch("/api/items", { cache: "no-store" });
     const data = await res.json();
     setItems(data);
     setLoading(false);
@@ -44,7 +44,8 @@ export default function Home() {
       body: JSON.stringify({ url }),
     });
     if (res.ok) {
-      fetchItems();
+      await res.json();
+      await fetchItems();
     }
   };
 
