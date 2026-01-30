@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface ReadingItem {
   id: number;
@@ -23,103 +23,120 @@ interface Props {
   onDelete: (id: number) => void;
 }
 
-function LinkedInIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-[#0a66c2]">
-      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
-    </svg>
-  );
+function extractTweetId(url: string): string | null {
+  const match = url.match(/\/status\/(\d+)/);
+  return match ? match[1] : null;
 }
 
-function XIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-gray-100">
-      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-    </svg>
-  );
+function extractLinkedInUrn(url: string): string | null {
+  // Match patterns like /posts/username_activity-1234567890-xxxx
+  // or /feed/update/urn:li:activity:1234567890
+  const activityMatch = url.match(/activity[:-](\d+)/);
+  if (activityMatch) return `urn:li:activity:${activityMatch[1]}`;
+
+  const ugcMatch = url.match(/ugcPost[:-](\d+)/);
+  if (ugcMatch) return `urn:li:ugcPost:${ugcMatch[1]}`;
+
+  return null;
 }
 
-function AuthorAvatar({ item }: { item: ReadingItem }) {
-  if (item.author_image) {
-    return (
-      <img
-        src={item.author_image}
-        alt={item.author || ""}
-        className="w-10 h-10 rounded-full object-cover"
-      />
-    );
-  }
-  // Fallback: initial letter circle
-  const initial = item.author?.[0]?.toUpperCase() || "?";
+function TwitterEmbed({ url }: { url: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const tweetId = extractTweetId(url);
+    if (!tweetId || !containerRef.current) return;
+
+    // Clear previous content
+    containerRef.current.innerHTML = "";
+
+    // Create the blockquote that Twitter's widget.js will hydrate
+    const blockquote = document.createElement("blockquote");
+    blockquote.className = "twitter-tweet";
+    blockquote.setAttribute("data-theme", "dark");
+    blockquote.setAttribute("data-conversation", "none");
+    const link = document.createElement("a");
+    link.href = url;
+    blockquote.appendChild(link);
+    containerRef.current.appendChild(blockquote);
+
+    // Load or re-run Twitter's widget script
+    const win = window as typeof window & {
+      twttr?: { widgets?: { load?: (el?: HTMLElement) => void } };
+    };
+    if (win.twttr?.widgets?.load) {
+      win.twttr.widgets.load(containerRef.current);
+    } else {
+      const existingScript = document.querySelector(
+        'script[src="https://platform.twitter.com/widgets.js"]'
+      );
+      if (!existingScript) {
+        const script = document.createElement("script");
+        script.src = "https://platform.twitter.com/widgets.js";
+        script.async = true;
+        document.body.appendChild(script);
+      }
+    }
+  }, [url]);
+
   return (
-    <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-sm font-semibold text-gray-300">
-      {initial}
+    <div ref={containerRef} className="p-4 min-h-[100px]">
+      <p className="text-gray-500 text-sm">Loading post...</p>
     </div>
   );
 }
 
-function SocialPost({ item }: { item: ReadingItem }) {
-  const [expanded, setExpanded] = useState(false);
-  const content = item.content || "";
-  const isLong = content.length > 300;
-  const displayContent = expanded || !isLong ? content : content.slice(0, 300);
+function LinkedInEmbed({ url }: { url: string }) {
+  const [iframeHeight, setIframeHeight] = useState(400);
+  const urn = extractLinkedInUrn(url);
 
-  const isLinkedIn = item.item_type === "linkedin";
+  if (!urn) {
+    // Fallback: try embedding the URL directly
+    return (
+      <div className="p-4">
+        <iframe
+          src={`https://www.linkedin.com/embed/feed/update/${encodeURIComponent(url)}`}
+          width="100%"
+          height={iframeHeight}
+          frameBorder="0"
+          allowFullScreen
+          title="LinkedIn Post"
+          className="rounded"
+          onLoad={(e) => {
+            // Try to auto-resize
+            try {
+              const frame = e.target as HTMLIFrameElement;
+              const h = frame.contentWindow?.document.body.scrollHeight;
+              if (h && h > 100) setIframeHeight(h);
+            } catch {
+              // cross-origin, can't access
+            }
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="p-4">
-      {/* Author header */}
-      <div className="flex items-center gap-3 mb-3">
-        <AuthorAvatar item={item} />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-gray-100 truncate">
-              {item.author || "Unknown"}
-            </span>
-            {isLinkedIn ? <LinkedInIcon /> : <XIcon />}
-          </div>
-          <span className="text-xs text-gray-500">
-            {new Date(item.created_at + "Z").toLocaleDateString(undefined, {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            })}
-          </span>
-        </div>
-      </div>
-
-      {/* Post content */}
-      <div className="text-gray-200 text-sm leading-relaxed whitespace-pre-wrap break-words">
-        {displayContent}
-        {isLong && !expanded && "..."}
-      </div>
-      {isLong && (
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="text-sm text-blue-400 hover:text-blue-300 mt-1"
-        >
-          {expanded ? "Show less" : "Show more"}
-        </button>
-      )}
-
-      {/* Post image */}
-      {item.image && (
-        <img
-          src={item.image}
-          alt=""
-          className="mt-3 rounded-lg w-full max-h-80 object-cover"
-        />
-      )}
-
-      {/* Source link */}
-      <a
-        href={item.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-block mt-3 text-xs text-gray-500 hover:text-gray-400"
-      >
-        View on {isLinkedIn ? "LinkedIn" : "X"} →
-      </a>
+      <iframe
+        src={`https://www.linkedin.com/embed/feed/update/${urn}`}
+        width="100%"
+        height={iframeHeight}
+        frameBorder="0"
+        allowFullScreen
+        title="LinkedIn Post"
+        className="rounded"
+        onLoad={(e) => {
+          try {
+            const frame = e.target as HTMLIFrameElement;
+            const h = frame.contentWindow?.document.body.scrollHeight;
+            if (h && h > 100) setIframeHeight(h);
+          } catch {
+            // cross-origin, can't access
+          }
+        }}
+      />
     </div>
   );
 }
@@ -166,7 +183,8 @@ function ArticleCard({ item }: { item: ReadingItem }) {
 
 export function FeedItem({ item, onToggleRead, onDelete }: Props) {
   const isRead = item.is_read === 1;
-  const isSocial = item.item_type === "linkedin" || item.item_type === "twitter";
+  const isTwitter = item.item_type === "twitter";
+  const isLinkedIn = item.item_type === "linkedin";
 
   return (
     <div
@@ -174,7 +192,13 @@ export function FeedItem({ item, onToggleRead, onDelete }: Props) {
         isRead ? "opacity-60" : ""
       }`}
     >
-      {isSocial ? <SocialPost item={item} /> : <ArticleCard item={item} />}
+      {isTwitter ? (
+        <TwitterEmbed url={item.url} />
+      ) : isLinkedIn ? (
+        <LinkedInEmbed url={item.url} />
+      ) : (
+        <ArticleCard item={item} />
+      )}
 
       <div className="flex border-t border-gray-800">
         <button
