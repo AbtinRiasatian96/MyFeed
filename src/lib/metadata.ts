@@ -230,24 +230,10 @@ export async function fetchMetadata(url: string): Promise<PageMetadata> {
   };
 
   if (itemType === "twitter") {
-    const twitterData = await fetchTwitterPost(url);
-    Object.assign(result, twitterData);
+    // Embeds handle rendering — just save the type and source
     result.source = "x.com";
-
-    // If we still don't have content, try HTML scraping as last resort
-    if (!result.content) {
-      const html = await fetchHtml(url);
-      if (html) {
-        result.title = result.title || extractOg(html, "og:title");
-        result.description =
-          result.description || extractOg(html, "og:description");
-        result.content = result.content || result.description;
-        result.image = result.image || extractOg(html, "og:image");
-      }
-    }
   } else if (itemType === "linkedin") {
-    const linkedInData = await fetchLinkedInPost(url);
-    Object.assign(result, linkedInData);
+    // Embeds handle rendering — just save the type and source
     result.source = "linkedin.com";
   } else {
     // Generic article
