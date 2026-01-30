@@ -68,20 +68,27 @@ export interface ReadingItem {
   content: string | null;
 }
 
+function str(val: unknown): string | null {
+  if (val == null) return null;
+  if (typeof val === "string") return val;
+  if (val instanceof Uint8Array) return new TextDecoder().decode(val);
+  return String(val);
+}
+
 function rowToItem(row: Record<string, unknown>): ReadingItem {
   return {
-    id: row.id as number,
-    url: row.url as string,
-    title: (row.title as string) || null,
-    description: (row.description as string) || null,
-    image: (row.image as string) || null,
-    source: (row.source as string) || null,
-    is_read: (row.is_read as number) || 0,
-    created_at: (row.created_at as string) || "",
-    item_type: (row.item_type as string) || "article",
-    author: (row.author as string) || null,
-    author_image: (row.author_image as string) || null,
-    content: (row.content as string) || null,
+    id: Number(row.id),
+    url: str(row.url) || "",
+    title: str(row.title),
+    description: str(row.description),
+    image: str(row.image),
+    source: str(row.source),
+    is_read: Number(row.is_read) || 0,
+    created_at: str(row.created_at) || "",
+    item_type: str(row.item_type) || "article",
+    author: str(row.author),
+    author_image: str(row.author_image),
+    content: str(row.content),
   };
 }
 
