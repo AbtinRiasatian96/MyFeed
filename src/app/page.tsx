@@ -43,9 +43,16 @@ export default function Home() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ url }),
     });
+    console.log("POST status:", res.status);
+    const body = await res.text();
+    console.log("POST body:", body);
     if (res.ok) {
-      const newItem = await res.json();
-      setItems((prev) => [newItem, ...prev]);
+      const newItem = JSON.parse(body);
+      console.log("newItem:", newItem);
+      setItems((prev) => {
+        console.log("prev items:", prev.length, "adding item id:", newItem.id);
+        return [newItem, ...prev];
+      });
     }
   };
 
