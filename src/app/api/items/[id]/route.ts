@@ -10,7 +10,9 @@ export async function PATCH(
   if (!item) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  return NextResponse.json(item);
+  return new Response(JSON.stringify(item), {
+    headers: { "Content-Type": "application/json" },
+  });
 }
 
 export async function DELETE(

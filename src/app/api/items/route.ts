@@ -4,7 +4,9 @@ import { fetchMetadata } from "@/lib/metadata";
 
 export async function GET() {
   const items = await getAllItems();
-  return NextResponse.json(items);
+  return new Response(JSON.stringify(items), {
+    headers: { "Content-Type": "application/json" },
+  });
 }
 
 export async function POST(request: NextRequest) {
@@ -33,5 +35,8 @@ export async function POST(request: NextRequest) {
     content: metadata.content,
   });
 
-  return NextResponse.json(item, { status: 201 });
+  return new Response(JSON.stringify(item), {
+    status: 201,
+    headers: { "Content-Type": "application/json" },
+  });
 }
